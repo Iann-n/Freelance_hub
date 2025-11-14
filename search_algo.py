@@ -4,11 +4,12 @@ from sentence_transformers import SentenceTransformer, util
 model = SentenceTransformer("all-MiniLM-L6-v2")
 
 class freelance_post:
-    def __init__(self,title, description, price, id):
+    def __init__(self,title, description, price, id, resume):
         self.title = title
         self.description = description
         self.price = price
         self.id = id
+        self.resume = resume
 
     def post(self):
         return f"Post(title = {self.title}, content = {self.description})"
@@ -16,9 +17,8 @@ class freelance_post:
 
 class SearchQuery:
     def __init__(self, items):
-        print(f"Type of items: {type(items)}")
         self.items = items
-        self.text = [f"{item.title} {item.description}" for item in items]
+        self.text = [f"TITLE: {item.title}. DESCRIPTION: {item.description}. SELLER'S RESUME: {item.resume or ''}" for item in items]
         # Transforms documents into a TF-IDF vector (a vector used to represent words)
 
     def search(self, query):
@@ -29,6 +29,7 @@ class SearchQuery:
             return []
         similarities= cosine_similarity([query_embedding], text_embedding)[0]
         # Sorted expects key to be a function
+
         # reverse = True because we want top cosine similarity value first
         ranked = sorted(
             zip(self.items, similarities), key = lambda x: x[1], reverse= True

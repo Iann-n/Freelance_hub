@@ -108,8 +108,10 @@ def register():
         session["resume"] = user_profile.resume
         db.commit()
 
-        services = cursor.execute("SELECT * FROM services").fetchall()
-        posts = [freelance_post(row["title"], row["description"], row["price"], row["id"]) for row in services]
+        services = cursor.execute("""SELECT services.id, services.title, services.description, services.price, users.resume 
+                                FROM services
+                                JOIN users ON services.user_id = users.id""").fetchall()
+        posts = [freelance_post(row["title"], row["description"], row["price"], row["id"], row["resume"]) for row in services]
         cursor.close()
         db.close()
 
@@ -158,8 +160,10 @@ def login():
             db.close()
             return render_template("error.html", error="Invalid username or password")
 
-        services = cursor.execute("SELECT * FROM services").fetchall()
-        posts = [freelance_post(row["title"], row["description"], row["price"], row["id"]) for row in services]
+        services = cursor.execute("""SELECT services.id, services.title, services.description, services.price, users.resume 
+                                FROM services
+                                JOIN users ON services.user_id = users.id""").fetchall()
+        posts = [freelance_post(row["title"], row["description"], row["price"], row["id"], row["resume"]) for row in services]
 
         session["user_id"] = user["id"]
         session["username"] = name
@@ -237,8 +241,10 @@ def search():
     db = get_db_connection()
     cursor = db.cursor()
     user_profile = Profile(session["username"], session["profile_type"], None, session["user_id"])
-    services = cursor.execute("SELECT * FROM services").fetchall()
-    posts = [freelance_post(row["title"], row["description"], row["price"], row["id"]) for row in services]
+    services = cursor.execute("""SELECT services.id, services.title, services.description, services.price, users.resume 
+                              FROM services
+                              JOIN users ON services.user_id = users.id""").fetchall()
+    posts = [freelance_post(row["title"], row["description"], row["price"], row["id"], row["resume"]) for row in services]
     engine = SearchQuery(posts)
     query = request.args.get("query")
 
