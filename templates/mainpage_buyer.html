@@ -6,21 +6,68 @@ Buyer Main Page
 
 {% block main %}
 
-<div class="w-screen h-screen overflow-y-auto bg-[#f0f4f8]">
+<div class="w-screen h-screen overflow-y-auto bg-[#f0f4f8]">-
+<style>
+.search-wrapper {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  transition: transform 0.2s ease-in-out;
+}
 
-  <form method="GET" action="/search" class="mb-6 my-4 max-w-md mx-auto flex">
-    <input type="text" name="query" placeholder="Search..."
-      class="flex-grow p-3 border border-gray-300 rounded-l-full bg-white
-             focus:outline-none transition duration-300 ease-in-out
-             focus:scale-105 focus:shadow-lg">
-    <button type="submit"
-      class="p-3 px-5 bg-blue-500 text-white rounded-r-full 
-             hover:bg-blue-600 transition duration-300 ease-in-out
-             hover:scale-105 hover:shadow-lg">
-      Search
-    </button>
-  </form>
+.search-wrapper:focus-within {
+  transform: scale(1.05);
+}
 
+.search-input {
+  width: 100%;
+  padding-left: 110px; /* Space for prefix */
+  padding-right: 16px;
+  border-radius: 9999px;
+  background: white;
+  border: 1px solid #d1d5db;
+  height: 48px;
+  outline: none;
+}
+
+.search-input:focus {
+  border-color: #3b82f6; /* blue outline */
+  box-shadow: 0 0 6px rgba(59, 130, 246, 0.4);
+}
+
+.search-prefix {
+  position: absolute;
+  left: 22px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6b7280;
+  pointer-events: none;
+  font-size: 1rem;
+}
+</style>
+
+
+<form method="GET" action="/search" class="mb-6 my-4 max-w-md mx-auto flex">
+
+  <div class="search-wrapper">
+    <span class="search-prefix">I want to </span>
+
+    <input
+      type="text"
+      name="query"
+      class="search-input"
+    >
+  </div>
+
+  <button type="submit"
+    class="ml-3 p-3 px-5 bg-blue-500 text-white rounded-full 
+           hover:bg-blue-600 transition duration-300 ease-in-out
+           hover:scale-105 hover:shadow-lg">
+    Search
+  </button>
+
+</form>
 {% if items %}
 <div class="flex justify-center my-4">
   <button onclick="openTagModal()"
