@@ -183,7 +183,7 @@ def login():
         cursor.close()
         db.close()
         if user_profile.is_buyer():
-            return render_template("/mainpage_buyer.html", items = posts, profile = user_profile, tags = SERVICE_TAGS)
+            return redirect(("/buyer"))
         
         if user_profile.is_seller():
             return render_template("/mainpage_buyer.html", items = posts, profile = user_profile, tags = SERVICE_TAGS)   
@@ -211,10 +211,17 @@ def recommend(posts):
 def buyer():
     db = get_db_connection()
     cursor = db.cursor()
+    user_id = session["user_id"]
+    print("CURRENT USER:", user_id)
+
     user_profile = Profile(session["username"], session["profile_type"], None, session["user_id"], session["resume"])
-    services = cursor.execute("""SELECT services.id, services.title, services.description, services.price, users.resume, 
-                            users.username FROM services
-                            JOIN users ON services.user_id = users.id""").fetchall()
+    services = cursor.execute("""
+        SELECT services.id, services.title, services.description, services.price, 
+               users.resume, users.username
+        FROM services
+        JOIN users ON services.user_id = users.id
+        WHERE services.user_id != ?
+    """, (user_id,)).fetchall()
     posts = [freelance_post(row["title"], row["description"], row["price"], row["id"], row["resume"], row["username"]) for row in services]
     ranked_items = recommend(posts)
 
@@ -363,19 +370,184 @@ ALLOWED_EXTENSIONS = {"pdf", "txt"}
 
 @app.route("/chat/<int:service_id>") 
 def chat(service_id):
-    db = get_db_connection() 
-    cursor = db.cursor() 
+    user_id = session.get("user_id")
+    if user_id is None:
+        return redirect("/login")
+
+    db = get_db_connection()
+    cursor = db.cursor()
+
+    # Get the service and seller
     service = cursor.execute("""
-        SELECT services.*, users.username 
+        SELECT services.*, users.username AS seller_name, users.id AS seller_id
         FROM services
         JOIN users ON services.user_id = users.id
         WHERE services.id = ?
     """, (service_id,)).fetchone()
-    if not service: return "Service not found", 404 
 
-    service_data = { "id": service["id"], "title": service["title"], "description": service["description"], "price": service["price"], "seller": service["username"] } 
+    if not service:
+        return "Service not found", 404
+
+    seller_id = service["seller_id"]
+    buyer_id = user_id
+
+    # 1. Try to find existing conversation
+    conversation = cursor.execute("""
+        SELECT * FROM conversations
+        WHERE service_id = ? AND buyer_id = ?
+    """, (service_id, buyer_id)).fetchone()
+
+    # 2. If no conversation exists → create one
+    if conversation is None:
+        cursor.execute("""
+            INSERT INTO conversations (service_id, buyer_id, seller_id)
+            VALUES (?, ?, ?)
+        """, (service_id, buyer_id, seller_id))
+        db.commit()
+
+        # Fetch the new conversation
+        conversation = cursor.execute("""
+            SELECT * FROM conversations
+            WHERE service_id = ? AND buyer_id = ?
+        """, (service_id, buyer_id)).fetchone()
+
+    conversation_id = conversation["id"]
+
+    # 3. Fetch messages
+    messages = cursor.execute("""
+        SELECT chat_messages.*, users.username
+        FROM chat_messages
+        JOIN users ON chat_messages.sender_id = users.id
+        WHERE conversation_id = ?
+        ORDER BY timestamp ASC
+    """, (conversation_id,)).fetchall()
+
+    service_data = { "id": service["id"], "title": service["title"], "description": service["description"], "price": service["price"], "seller": service["seller_name"] } 
     user_profile = Profile(session["username"],session["profile_type"], None, session["user_id"], session.get("resume", "")) 
-    return render_template("chat.html", service=service_data, profile = user_profile)
+    return render_template("chat.html", 
+                           service=service_data, 
+                           profile = user_profile,
+                           conversation_id = conversation_id, 
+                           messages = messages)
+
+@app.route("/chat/convo/<int:conversation_id>")
+def chat_conversation(conversation_id):
+    user_id = session.get("user_id")
+    if user_id is None:
+        return redirect("/login")
+
+    db = get_db_connection()
+    cursor = db.cursor()
+
+    # Check conversation exists
+    conversation = cursor.execute("""
+        SELECT * FROM conversations WHERE id = ?
+    """, (conversation_id,)).fetchone()
+
+    if not conversation:
+        return "Conversation not found", 404
+
+    # Load service (the convo contains service_id)
+    service = cursor.execute("""
+        SELECT services.*, users.username AS seller_name
+        FROM services
+        JOIN users ON services.user_id = users.id
+        WHERE services.id = ?
+    """, (conversation["service_id"],)).fetchone()
+
+    # Load messages
+    messages = cursor.execute("""
+        SELECT chat_messages.*, users.username
+        FROM chat_messages
+        JOIN users ON chat_messages.sender_id = users.id
+        WHERE conversation_id = ?
+        ORDER BY timestamp ASC
+    """, (conversation_id,)).fetchall()
+
+    service_data = {
+        "id": service["id"],
+        "title": service["title"],
+        "description": service["description"],
+        "price": service["price"],
+        "seller": service["seller_name"]
+    }
+
+    user_profile = Profile(
+        session["username"],
+        session["profile_type"],
+        None,
+        session["user_id"],
+        session.get("resume", "")
+    )
+
+    return render_template("chat.html",
+                           service=service_data,
+                           profile=user_profile,
+                           conversation_id=conversation_id,
+                           messages=messages)
+
+@app.route("/send_message/<int:conversation_id>", methods=["POST"])
+def send_msg(conversation_id):
+    user_id = session.get("user_id")
+
+    if user_id is None:
+        return "Unauthorized", 403
+
+    msg = request.form.get("message", "").strip()
+    if msg == "":
+        return redirect(f"/chat/{conversation_id}")
+
+    db = get_db_connection()
+    cursor = db.cursor()
+
+    conv = cursor.execute("""
+        SELECT * FROM conversations 
+        WHERE id=? AND (buyer_id=? OR seller_id=?)
+    """, (conversation_id, user_id, user_id)).fetchone()
+
+    if conv is None:
+        return "Unauthorized", 403
+
+    cursor.execute("""
+        INSERT INTO chat_messages (conversation_id, sender_id, message)
+        VALUES (?, ?, ?)
+    """, (conversation_id, user_id, msg))
+
+    db.commit()
+
+    return redirect(f"/chat/{conv['service_id']}")
+
+@app.route("/seller/inbox")
+def seller_inbox():
+    db = get_db_connection()
+    cursor = db.cursor()
+    seller_id = session.get("user_id")
+    if not seller_id:
+        return redirect("/login")
+
+    conversations = cursor.execute("""
+        SELECT 
+            c.id AS conversation_id,
+            u.username AS buyer_username,
+            s.title AS service_title,
+            m.message AS last_message,
+            m.timestamp AS last_timestamp
+        FROM conversations c
+        JOIN users u ON c.buyer_id = u.id
+        JOIN services s ON c.service_id = s.id
+        LEFT JOIN chat_messages m ON m.id = (
+            SELECT id FROM chat_messages
+            WHERE conversation_id = c.id
+            ORDER BY timestamp DESC
+            LIMIT 1
+        )
+        WHERE c.seller_id = ?
+        ORDER BY last_timestamp DESC
+    """, (seller_id,)).fetchall()
+
+    user_profile = Profile(session["username"],session["profile_type"], None, session["user_id"], session.get("resume", "")) 
+
+    return render_template("seller_inbox.html", conversations=conversations, profile = user_profile)
 
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
