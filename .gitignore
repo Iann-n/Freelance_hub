@@ -33,6 +33,7 @@ ENV/
 # Flask
 instance/
 flask_session/
+flask_session
 *.db
 
 # IDE
