@@ -91,9 +91,13 @@ def search():
     db = get_db_connection()
     cursor = db.cursor()
     
+    # ADD user_id filter to exclude your own services
+    user_id = session["user_id"]
+    
     services = cursor.execute("""SELECT services.id, services.title, services.description, services.price, 
                                 services.image_url, users.resume, users.username FROM services
-                                JOIN users ON services.user_id = users.id""").fetchall()
+                                JOIN users ON services.user_id = users.id
+                                WHERE services.user_id != ?""", (user_id,)).fetchall()
     posts = [freelance_post(row["title"], row["description"], row["price"], row["id"], 
                            row["resume"], row["username"], row["image_url"]) for row in services]
     engine = SearchQuery(posts)
