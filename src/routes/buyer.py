@@ -107,7 +107,14 @@ def search():
 
     user_profile = Profile(session["username"], session["profile_type"], None, 
                           session["user_id"], resume=session.get("resume", ""))
+    
+    # Get selected category from user preferences
+    row = cursor.execute("SELECT preferences FROM users WHERE id = ?", (session["user_id"],)).fetchone()
+    user_preferences = json.loads(row["preferences"]) if row and row["preferences"] else []
+    selected_category = user_preferences[0] if user_preferences else None
+    
     cursor.close()
     db.close()
 
-    return render_template("mainpage_buyer.html", items=items_ranked, profile=user_profile, tags=SERVICE_TAGS)
+    return render_template("mainpage_buyer.html", items=items_ranked, profile=user_profile, 
+                          tags=SERVICE_TAGS, selected_category=selected_category)
