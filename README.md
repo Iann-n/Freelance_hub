@@ -1,5 +1,5 @@
 ### Code Structure
-
+```
 Freelance_hub/
 ├── app.py                    # Original monolithic app (backup)
 ├── app_new.py                # New organized app with blueprints
@@ -43,3 +43,4 @@ Freelance_hub/
     ├── mainpage_buyer.html
     ├── mainpage_seller.html
     └── ...
+```
