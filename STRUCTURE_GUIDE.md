@@ -1,6 +1,6 @@
 # FreelanceHub - Organized Code Structure
 
-## 📁 New Project Structure
+## New Project Structure
 
 ```
 Freelance_hub/
@@ -48,7 +48,7 @@ Freelance_hub/
     └── ...
 ```
 
-## 🎯 Benefits of This Structure
+## Benefits of This Structure
 
 ### 1. **Separation of Concerns**
 - **Models**: Data structures (`Profile`, `freelance_post`)
@@ -76,7 +76,7 @@ Freelance_hub/
 - Reduced merge conflicts
 - Clear code ownership
 
-## 🔄 Migration Guide
+## Migration Guide
 
 ### Option 1: Gradual Migration (Recommended)
 1. Keep `app.py` as is
@@ -99,7 +99,7 @@ Move-Item app_new.py app.py -Force
 python app.py
 ```
 
-## 📋 File Descriptions
+## File Descriptions
 
 ### Core Files
 
@@ -167,7 +167,7 @@ Routes:
 Routes:
 - `/upload_resume` - Upload/edit resume
 
-## 🧪 Testing the New Structure
+## Testing the New Structure
 
 ```powershell
 # Activate virtual environment
@@ -187,7 +187,7 @@ python app_new.py
 # ✓ Payments
 ```
 
-## 🔍 Finding Code
+## Finding Code
 
 **Before (Monolithic):**
 - Everything in `app.py` (600+ lines)
@@ -206,7 +206,7 @@ python app_new.py
 | Config | `src/config/settings.py` |
 | Models | `src/models/` |
 
-## 🚀 Next Steps
+## Next Steps
 
 1. **Test thoroughly** - Ensure all features work
 2. **Add error handling** - Better exception management
@@ -215,14 +215,14 @@ python app_new.py
 5. **API endpoints** - Add REST API for mobile app
 6. **Documentation** - API docs with Swagger
 
-## ⚠️ Important Notes
+## Important Notes
 
 - Both `app.py` and `app_new.py` exist for now
 - Old files (`user_profile.py`, `search_algo.py`) still present
 - Can delete old files once confident in new structure
 - Database (`project.db`) works with both versions
 
-## 🎓 Learning Resources
+## Learning Resources
 
 - [Flask Blueprints](https://flask.palletsprojects.com/en/latest/blueprints/)
 - [Application Factory Pattern](https://flask.palletsprojects.com/en/latest/patterns/appfactories/)

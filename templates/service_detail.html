@@ -34,15 +34,33 @@ Service Details
         <h2 class="text-4xl font-bold text-gray-900 mb-4">{{ service.title }}</h2>
         <p class="text-gray-700 text-lg leading-relaxed mb-6">{{ service.description }}</p>
         
-        <div class="flex items-center justify-between p-6 bg-blue-50 rounded-xl mb-6">
-          <div>
-            <p class="text-sm text-gray-600 mb-1">Service Price</p>
-            <p class="text-4xl font-bold text-blue-600">RM {{ service.price }}</p>
+        <!-- Pricing Breakdown -->
+        <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 mb-6 border border-blue-100">
+          <div class="space-y-3">
+            <!-- Base Price -->
+            <div class="flex items-center justify-between">
+              <span class="text-gray-700 font-medium">Service Price</span>
+              <span class="text-2xl font-semibold text-gray-800">RM {{ "%.2f"|format(service.price) }}</span>
+            </div>
+            
+            <!-- Service Fee -->
+            <div class="flex items-center justify-between border-t border-blue-200 pt-3">
+              <span class="text-gray-600 text-sm">Platform Fee (10%)</span>
+              <span class="text-lg font-medium text-gray-700">RM {{ "%.2f"|format(service.price * 0.10) }}</span>
+            </div>
+            
+            <!-- Total -->
+            <div class="flex items-center justify-between border-t-2 border-blue-300 pt-4 mt-2">
+              <div class="flex items-center gap-2">
+                <svg class="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"></path>
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clip-rule="evenodd"></path>
+                </svg>
+                <span class="text-gray-900 font-bold text-lg">Total Amount</span>
+              </div>
+              <span class="text-4xl font-bold text-blue-600">RM {{ "%.2f"|format(service.price * 1.10) }}</span>
+            </div>
           </div>
-          <svg class="w-16 h-16 text-blue-200" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"></path>
-            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clip-rule="evenodd"></path>
-          </svg>
         </div>
 
         <div class="grid md:grid-cols-2 gap-4">

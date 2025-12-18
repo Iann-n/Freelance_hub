@@ -60,7 +60,7 @@ def create_checkout_session(service_id):
                         'product_data': {
                             'name': service['title'],
                         },
-                        'unit_amount': int(service['price'] * 100),
+                        'unit_amount': int(service['price'] * 100 * 1.10),
                     },
                     'quantity': 1,
                 },
