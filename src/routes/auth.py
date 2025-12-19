@@ -2,7 +2,7 @@
 from flask import Blueprint, render_template, request, session, redirect
 from werkzeug.security import generate_password_hash, check_password_hash
 from src.models import Profile
-from src.utils.database import get_db_connection
+from src.utils.database import get_db
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -15,9 +15,13 @@ def home():
     if "user_id" not in session:
         return redirect("/")
     
-    user_profile = Profile(session["username"], session.get("profile_type", "buyer"), 
-                          session.get("password"), session["user_id"], 
-                          resume=session.get("resume", ""))
+    user_profile = Profile(
+        session["username"], 
+        session.get("profile_type", "buyer"), 
+        session.get("password"), 
+        session["user_id"], 
+        resume=session.get("resume", "")
+    )
     return render_template("home.html", profile=user_profile)
 
 @auth_bp.route("/logout")
@@ -32,48 +36,40 @@ def register():
         password = request.form.get("password")
         password_confirm = request.form.get("confirmation")
 
-        db = get_db_connection()
-        cursor = db.cursor()
-
         if not name:
             return render_template("error.html", error="Please enter name")
-        
         if not password:
             return render_template("error.html", error="Please enter password")
-        
         if not password_confirm:
             return render_template("error.html", error="Please confirm password")
-        
         if password != password_confirm:
             return render_template("error.html", error="Passwords do not match")
         
-        rows = cursor.execute("SELECT username FROM users").fetchall()
-        name_list = [row[0] for row in rows]
-
-        if name in name_list:
-            return render_template("error.html", error="Name is taken")
-        
-        hashed_password = generate_password_hash(password, method='pbkdf2:sha512')
-        
-        cursor.execute("INSERT INTO users (username, password, is_buyer, is_seller) VALUES (?, ?, ?, ?)", 
-                      (name, hashed_password, 1, 0))
-        db.commit()
-
-        # Create user session
-        rows = cursor.execute("SELECT * FROM users WHERE username = ?", (name,)).fetchall()
-        user_profile = Profile(name, "buyer", rows[0]["password"], rows[0]["id"], resume=rows[0]["resume"])
-        session["user_id"] = rows[0]["id"]
-        session["username"] = name
-        session["profile_type"] = user_profile.profile_type
-        session["password"] = user_profile.password
-        session["resume"] = user_profile.resume
-
-        cursor.close()
-        db.close()
+        with get_db() as db:
+            cursor = db.cursor()
+            
+            existing = cursor.execute("SELECT username FROM users WHERE username = ?", (name,)).fetchone()
+            if existing:
+                return render_template("error.html", error="Name is taken")
+            
+            hashed_password = generate_password_hash(password, method='pbkdf2:sha512')
+            
+            cursor.execute(
+                "INSERT INTO users (username, password, is_buyer, is_seller) VALUES (?, ?, ?, ?)", 
+                (name, hashed_password, 1, 0)
+            )
+            
+            user = cursor.execute("SELECT * FROM users WHERE username = ?", (name,)).fetchone()
+            
+            session["user_id"] = user["id"]
+            session["username"] = name
+            session["profile_type"] = "buyer"
+            session["password"] = user["password"]
+            session["resume"] = user["resume"] or ""
 
         return redirect("/home")
-    else:
-        return render_template("register.html")
+    
+    return render_template("register.html")
 
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
@@ -83,38 +79,22 @@ def login():
 
         if not name:
             return render_template("error.html", error="Please enter name")
-        
         if not password:
             return render_template("error.html", error="Please enter password")
         
-        db = get_db_connection()
-        cursor = db.cursor()
+        with get_db() as db:
+            cursor = db.cursor()
+            user = cursor.execute("SELECT * FROM users WHERE username = ?", (name,)).fetchone()
 
-        user = cursor.execute("SELECT * FROM users WHERE username = ?", (name,)).fetchone()
+            if not user or not check_password_hash(user["password"], password):
+                return render_template("error.html", error="Invalid username or password")
 
-        if not user or not check_password_hash(user["password"], password):
-            cursor.close()
-            db.close()
-            return render_template("error.html", error="Invalid username or password")
+            session["user_id"] = user["id"]
+            session["username"] = name
+            session["password"] = user["password"]
+            session["resume"] = user["resume"] or ""
+            session["profile_type"] = "seller" if user["is_seller"] == 1 else "buyer"
 
-        session["user_id"] = user["id"]
-        session["username"] = name
-
-        if user["is_buyer"] == 1:
-            user_profile = Profile(name, "buyer", user["password"], user["id"], resume=user["resume"])
-            session["profile_type"] = user_profile.profile_type
-            session["password"] = user_profile.password
-            session["resume"] = user_profile.resume
-
-        if user["is_seller"] == 1:
-            user_profile = Profile(name, "seller", user["password"], user["id"], resume=user["resume"])
-            session["profile_type"] = user_profile.profile_type
-            session["password"] = user_profile.password
-            session["resume"] = user_profile.resume
-
-        cursor.close()
-        db.close()
-        
         return redirect("/home")
-    else:
-        return render_template("login.html")
+    
+    return render_template("login.html")
