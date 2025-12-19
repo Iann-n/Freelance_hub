@@ -1,7 +1,5 @@
-from sklearn.metrics.pairwise import cosine_similarity
-from sentence_transformers import SentenceTransformer, util
-
-model = SentenceTransformer("all-MiniLM-L6-v2")
+from rank_bm25 import BM25Okapi
+import re
 
 class freelance_post:
     def __init__(self,title, description, price, id, resume, seller_username, image_url = None):
@@ -19,21 +17,25 @@ class freelance_post:
         
 
 class SearchQuery:
-    def __init__(self, items):
-        self.items = items
-        self.text = [f"TITLE: {item.title}. DESCRIPTION: {item.description}. SELLER'S RESUME: {item.resume or ''}" for item in items]
-
-    def search(self, query):
-        query_embedding = model.encode(query, normalize_embeddings=True)
-        text_embedding = model.encode(self.text, normalize_embeddings=True)
-        if text_embedding is None or len(text_embedding) == 0:
-            print("DEBUG: No text embeddings available.")
-            return []
-        similarities= cosine_similarity([query_embedding], text_embedding)[0]
-        # Sorted expects key to be a function
-
-        # reverse = True because we want top cosine similarity value first
-        ranked = sorted(
-            zip(self.items, similarities), key = lambda x: x[1], reverse= True
-        )
-        return ranked
+    def __init__(self, posts):
+        self.posts = posts
+        self.tokenized_corpus = [
+            self._tokenize(f"{post.title} {post.description}") 
+            for post in posts
+        ]
+        self.bm25 = BM25Okapi(self.tokenized_corpus)
+    
+    def _tokenize(self, text):
+        text = text.lower()
+        text = re.sub(r'[^\w\s]', '', text)
+        return text.split()
+    
+    def search(self, query, top_k=None):
+        tokenized_query = self._tokenize(query)
+        scores = self.bm25.get_scores(tokenized_query)
+        results = list(zip(self.posts, scores))
+        results.sort(key=lambda x: x[1], reverse=True)
+        
+        if top_k:
+            results = results[:top_k]
+        return results
