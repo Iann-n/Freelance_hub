@@ -30,7 +30,7 @@ def service_detail(service_id):
         "id": service["id"], 
         "title": service["title"], 
         "description": service["description"], 
-        "price": service["price"],
+        "price": float(service["price"]) if service["price"] is not None else 0.0,
         "image_url": service["image_url"] if service["image_url"] else "/static/default_image.png"
     }
     user_profile = Profile(session["username"], session["profile_type"], None, 

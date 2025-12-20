@@ -303,7 +303,7 @@ def chat(service_id):
         "id": service["id"], 
         "title": service["title"], 
         "description": service["description"], 
-        "price": service["price"], 
+        "price": float(service["price"]) if service["price"] is not None else 0.0, 
         "seller": service["seller_name"], 
         "image_url": service["image_url"] or "/static/default_image.png"
     }
@@ -366,7 +366,7 @@ def chat_conversation(conversation_id):
         "id": service["id"],
         "title": service["title"],
         "description": service["description"],
-        "price": service["price"],
+        "price": float(service["price"]) if service["price"] is not None else 0.0,
         "seller": service["seller_name"],
         "image_url": service["image_url"] or "/static/default_image.png"
     }

@@ -4,7 +4,7 @@ class freelance_post:
     def __init__(self, title, description, price, id, resume, seller_username, image_url=None):
         self.title = title
         self.description = description
-        self.price = price
+        self.price = float(price) if price is not None else 0.0
         self.id = id
         self.resume = resume
         self.seller_username = seller_username
