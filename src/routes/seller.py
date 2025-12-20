@@ -18,13 +18,13 @@ def seller():
 
     # Fetch unread message count for this seller
     total_unread = cursor.execute("""
-        SELECT COUNT(*)
+        SELECT COUNT(*) AS unread_count
         FROM chat_messages
         JOIN conversations ON chat_messages.conversation_id = conversations.id
         WHERE conversations.seller_id = %s
         AND chat_messages.sender_id != %s
-        AND chat_messages.is_read = 0
-    """, (session["user_id"], session["user_id"])).fetchone()[0]
+        AND chat_messages.is_read = false
+    """, (session["user_id"], session["user_id"])).fetchone()["unread_count"]
 
     # Fetch the seller's services + include resume via JOIN
     user_tasks = cursor.execute("""
