@@ -47,7 +47,7 @@ def upload_resume():
         
         db = get_db_connection()
         cursor = db.cursor()
-        cursor.execute("UPDATE users SET resume = ? WHERE id = ?", 
+        cursor.execute("UPDATE users SET resume = %s WHERE id = %s", 
                       (extracted_text, session["user_id"]))
         db.commit()
 
@@ -64,8 +64,8 @@ def upload_resume():
             SELECT COUNT(*)
             FROM chat_messages
             JOIN conversations ON chat_messages.conversation_id = conversations.id
-            WHERE conversations.seller_id = ?
-            AND chat_messages.sender_id != ?
+            WHERE conversations.seller_id = %s
+            AND chat_messages.sender_id != %s
             AND chat_messages.is_read = 0
         """, (session["user_id"], session["user_id"])).fetchone()[0]
         
@@ -77,7 +77,7 @@ def upload_resume():
     else:
         db = get_db_connection()
         cursor = db.cursor()
-        cursor.execute("SELECT resume FROM users WHERE id = ?", (session["user_id"],))
+        cursor.execute("SELECT resume FROM users WHERE id = %s", (session["user_id"],))
         row = cursor.fetchone()
         resume_value = row["resume"] if row and row["resume"] else ""
         cursor.close()

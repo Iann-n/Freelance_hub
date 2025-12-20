@@ -14,15 +14,15 @@ def seller():
     cursor = db.cursor()
 
     # Fetch current user's resume
-    user_row = cursor.execute("SELECT * FROM users WHERE id = ?", (session["user_id"],)).fetchone()
+    user_row = cursor.execute("SELECT * FROM users WHERE id = %s", (session["user_id"],)).fetchone()
 
     # Fetch unread message count for this seller
     total_unread = cursor.execute("""
         SELECT COUNT(*)
         FROM chat_messages
         JOIN conversations ON chat_messages.conversation_id = conversations.id
-        WHERE conversations.seller_id = ?
-        AND chat_messages.sender_id != ?
+        WHERE conversations.seller_id = %s
+        AND chat_messages.sender_id != %s
         AND chat_messages.is_read = 0
     """, (session["user_id"], session["user_id"])).fetchone()[0]
 
@@ -32,7 +32,7 @@ def seller():
                services.price, services.image_url, users.resume, users.username
         FROM services
         JOIN users ON services.user_id = users.id
-        WHERE services.user_id = ?
+        WHERE services.user_id = %s
     """, (session["user_id"],)).fetchall()
 
     user_posts = [
@@ -98,7 +98,7 @@ def add_service():
         db = get_db_connection()
         cursor = db.cursor()
 
-        cursor.execute("INSERT INTO services (title, description, price, user_id, tag, image_url) VALUES (?, ?, ?, ?, ?, ?)", 
+        cursor.execute("INSERT INTO services (title, description, price, user_id, tag, image_url) VALUES (%s, %s, %s, %s, %s, %s)", 
                       (title, description, price, session["user_id"], tag, image_url))
         db.commit()
         cursor.close()
@@ -115,18 +115,18 @@ def edit_service():
     title = request.form.get("title")
     description = request.form.get("description")
     price = request.form.get("price")
-    
+
     db = get_db_connection()
     cursor = db.cursor()
 
-    cursor.execute("UPDATE services SET title = ?, description = ?, price = ? WHERE user_id = ? AND id = ?", 
+    cursor.execute("UPDATE services SET title = %s, description = %s, price = %s WHERE user_id = %s AND id = %s", 
                   (title, description, price, session["user_id"], service_id))
     db.commit()
 
     user_tasks = cursor.execute("""SELECT services.id, services.title, services.description, services.price, 
                                   services.image_url, users.resume, users.username FROM services
                                   JOIN users ON services.user_id = users.id
-                                  WHERE services.user_id = ?""", (session["user_id"],)).fetchall()
+                                  WHERE services.user_id = %s""", (session["user_id"],)).fetchall()
     user_posts = [freelance_post(row["title"], row["description"], row["price"], row["id"], 
                                 row["resume"], row["username"], row["image_url"]) for row in user_tasks]
 
@@ -144,13 +144,13 @@ def delete_service():
     db = get_db_connection()
     cursor = db.cursor()
 
-    cursor.execute("DELETE FROM services WHERE id = ? AND user_id = ?", (service_id, session["user_id"]))
+    cursor.execute("DELETE FROM services WHERE id = %s AND user_id = %s", (service_id, session["user_id"]))
     db.commit()
 
     user_tasks = cursor.execute("""SELECT services.id, services.title, services.description, services.price, 
                                   services.image_url, users.resume, users.username FROM services
                                   JOIN users ON services.user_id = users.id
-                                  WHERE services.user_id = ?""", (session["user_id"],)).fetchall()
+                                  WHERE services.user_id = %s""", (session["user_id"],)).fetchall()
     user_posts = [freelance_post(row["title"], row["description"], row["price"], row["id"], 
                                 row["resume"], row["username"], row["image_url"]) for row in user_tasks]
 
@@ -181,7 +181,7 @@ def seller_inbox():
                 SELECT COUNT(*) 
                 FROM chat_messages 
                 WHERE conversation_id = c.id
-                AND sender_id != ?
+                AND sender_id != %s
                 AND is_read = 0
             ) AS unread_count
         FROM conversations c
@@ -193,7 +193,7 @@ def seller_inbox():
             ORDER BY timestamp DESC
             LIMIT 1
         )
-        WHERE c.seller_id = ?
+        WHERE c.seller_id = %s
         ORDER BY last_timestamp DESC
     """, (seller_id, seller_id)).fetchall()
 

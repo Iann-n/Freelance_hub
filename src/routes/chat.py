@@ -30,7 +30,7 @@ def api_conversations():
                 SELECT COUNT(*) 
                 FROM chat_messages 
                 WHERE conversation_id = c.id
-                AND sender_id != ?
+                AND sender_id != %s
                 AND is_read = 0
             ) AS unread_count
         FROM conversations c
@@ -43,7 +43,7 @@ def api_conversations():
             ORDER BY timestamp DESC
             LIMIT 1
         )
-        WHERE c.buyer_id = ? OR c.seller_id = ?
+        WHERE c.buyer_id = %s OR c.seller_id = %s
         ORDER BY last_timestamp DESC
         LIMIT 10
     """, (user_id, user_id, user_id)).fetchall()
@@ -78,7 +78,7 @@ def api_conversation_messages(conversation_id):
     # Verify user is part of this conversation
     conversation = cursor.execute("""
         SELECT * FROM conversations 
-        WHERE id = ? AND (buyer_id = ? OR seller_id = ?)
+        WHERE id = %s AND (buyer_id = %s OR seller_id = %s)
     """, (conversation_id, user_id, user_id)).fetchone()
 
     if not conversation:
@@ -90,7 +90,7 @@ def api_conversation_messages(conversation_id):
     cursor.execute("""
         UPDATE chat_messages
         SET is_read = 1
-        WHERE conversation_id = ? AND sender_id != ?
+        WHERE conversation_id = %s AND sender_id != %s
     """, (conversation_id, user_id))
     db.commit()
 
@@ -99,7 +99,7 @@ def api_conversation_messages(conversation_id):
         SELECT chat_messages.*, users.username
         FROM chat_messages
         JOIN users ON chat_messages.sender_id = users.id
-        WHERE conversation_id = ?
+        WHERE conversation_id = %s
         ORDER BY timestamp ASC
     """, (conversation_id,)).fetchall()
 
@@ -133,7 +133,7 @@ def api_send_message(conversation_id):
     # Verify user is part of this conversation
     conversation = cursor.execute("""
         SELECT * FROM conversations 
-        WHERE id = ? AND (buyer_id = ? OR seller_id = ?)
+        WHERE id = %s AND (buyer_id = %s OR seller_id = %s)
     """, (conversation_id, user_id, user_id)).fetchone()
 
     if not conversation:
@@ -153,7 +153,7 @@ def api_send_message(conversation_id):
     # Insert notification
     cursor.execute("""
         INSERT INTO notifications (user_id, message)
-        VALUES (?, ?)
+        VALUES (%s, %s)
     """, (recipient_id, f"New message from {session['username']}"))
 
     db.commit()
@@ -187,7 +187,7 @@ def inbox():
                 SELECT COUNT(*) 
                 FROM chat_messages 
                 WHERE conversation_id = c.id
-                AND sender_id != ?
+                AND sender_id != %s
                 AND is_read = 0
             ) AS unread_count
         FROM conversations c
@@ -200,7 +200,7 @@ def inbox():
             ORDER BY timestamp DESC
             LIMIT 1
         )
-        WHERE c.buyer_id = ? OR c.seller_id = ?
+        WHERE c.buyer_id = %s OR c.seller_id = %s
         ORDER BY last_timestamp DESC
     """, (user_id, user_id, user_id)).fetchall()
 
@@ -250,7 +250,7 @@ def chat(service_id):
         SELECT services.*, users.username AS seller_name, users.id AS seller_id
         FROM services
         JOIN users ON services.user_id = users.id
-        WHERE services.id = ?
+        WHERE services.id = %s
     """, (service_id,)).fetchone()
 
     if not service:
@@ -262,20 +262,20 @@ def chat(service_id):
     # Try to find existing conversation
     conversation = cursor.execute("""
         SELECT * FROM conversations
-        WHERE service_id = ? AND buyer_id = ?
+        WHERE service_id = %s AND buyer_id = %s
     """, (service_id, buyer_id)).fetchone()
 
     # If no conversation exists, create one
     if conversation is None:
         cursor.execute("""
             INSERT INTO conversations (service_id, buyer_id, seller_id)
-            VALUES (?, ?, ?)
+            VALUES (%s, %s, %s)
         """, (service_id, buyer_id, seller_id))
         db.commit()
 
         conversation = cursor.execute("""
             SELECT * FROM conversations
-            WHERE service_id = ? AND buyer_id = ?
+            WHERE service_id = %s AND buyer_id = %s
         """, (service_id, buyer_id)).fetchone()
 
     conversation_id = conversation["id"]
@@ -285,7 +285,7 @@ def chat(service_id):
         SELECT chat_messages.*, users.username
         FROM chat_messages
         JOIN users ON chat_messages.sender_id = users.id
-        WHERE conversation_id = ?
+        WHERE conversation_id = %s
         ORDER BY timestamp ASC
     """, (conversation_id,)).fetchall()
     cursor.close()
@@ -319,7 +319,7 @@ def chat_conversation(conversation_id):
 
     # Check conversation exists
     conversation = cursor.execute("""
-        SELECT * FROM conversations WHERE id = ?
+        SELECT * FROM conversations WHERE id = %s
     """, (conversation_id,)).fetchone()
 
     if not conversation:
@@ -329,8 +329,8 @@ def chat_conversation(conversation_id):
     cursor.execute("""
         UPDATE chat_messages
         SET is_read = 1
-        WHERE conversation_id = ?
-        AND sender_id != ?
+        WHERE conversation_id = %s
+        AND sender_id != %s
     """, (conversation_id, user_id))
     db.commit()
 
@@ -339,7 +339,7 @@ def chat_conversation(conversation_id):
         SELECT services.*, users.username AS seller_name
         FROM services
         JOIN users ON services.user_id = users.id
-        WHERE services.id = ?
+        WHERE services.id = %s
     """, (conversation["service_id"],)).fetchone()
 
     # Load messages
@@ -347,7 +347,7 @@ def chat_conversation(conversation_id):
         SELECT chat_messages.*, users.username
         FROM chat_messages
         JOIN users ON chat_messages.sender_id = users.id
-        WHERE conversation_id = ?
+        WHERE conversation_id = %s
         ORDER BY timestamp ASC
     """, (conversation_id,)).fetchall()
 
@@ -392,7 +392,7 @@ def send_msg(conversation_id):
 
     conv = cursor.execute("""
         SELECT * FROM conversations 
-        WHERE id=? AND (buyer_id=? OR seller_id=?)
+        WHERE id= %s AND (buyer_id= %s OR seller_id= %s)
     """, (conversation_id, user_id, user_id)).fetchone()
 
     if conv is None:
@@ -400,7 +400,7 @@ def send_msg(conversation_id):
 
     cursor.execute("""
         INSERT INTO chat_messages (conversation_id, sender_id, message)
-        VALUES (?, ?, ?)
+        VALUES (%s, %s, %s)
     """, (conversation_id, user_id, msg))
 
     # Determine who to notify
@@ -409,7 +409,7 @@ def send_msg(conversation_id):
     # Insert notification
     cursor.execute("""
         INSERT INTO notifications (user_id, message)
-        VALUES (?, ?)
+        VALUES (%s, %s)
     """, (recipient_id, f"New message from {session['username']}"))
 
     db.commit()

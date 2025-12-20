@@ -13,7 +13,7 @@ def recommend(posts):
     """Recommend posts based on user preferences"""
     with get_db() as db:
         cursor = db.cursor()
-        row = cursor.execute("SELECT preferences FROM users WHERE id = ?", (session["user_id"],)).fetchone()
+        row = cursor.execute("SELECT preferences FROM users WHERE id = %s", (session["user_id"],)).fetchone()
         preferences = json.loads(row["preferences"]) if row and row["preferences"] else []
     
     if not preferences:
@@ -36,10 +36,10 @@ def buyer():
                    services.image_url, users.resume, users.username
             FROM services
             JOIN users ON services.user_id = users.id
-            WHERE services.user_id != ?
+            WHERE services.user_id != %s
         """, (user_id,)).fetchall()
         
-        row = cursor.execute("SELECT preferences FROM users WHERE id = ?", (user_id,)).fetchone()
+        row = cursor.execute("SELECT preferences FROM users WHERE id = %s", (user_id,)).fetchone()
         user_preferences = json.loads(row["preferences"]) if row and row["preferences"] else []
     
     posts = [
@@ -82,7 +82,7 @@ def set_preferences():
 
     with get_db() as db:
         cursor = db.cursor()
-        cursor.execute("UPDATE users SET preferences = ? WHERE id = ?", (preferences_str, session["user_id"]))
+        cursor.execute("UPDATE users SET preferences = %s WHERE id = %s", (preferences_str, session["user_id"]))
     
     return redirect("/buyer")
 
@@ -99,10 +99,10 @@ def search():
                    services.image_url, users.resume, users.username 
             FROM services
             JOIN users ON services.user_id = users.id
-            WHERE services.user_id != ?
+            WHERE services.user_id != %s
         """, (user_id,)).fetchall()
         
-        row = cursor.execute("SELECT preferences FROM users WHERE id = ?", (user_id,)).fetchone()
+        row = cursor.execute("SELECT preferences FROM users WHERE id = %s", (user_id,)).fetchone()
         user_preferences = json.loads(row["preferences"]) if row and row["preferences"] else []
     
     posts = [

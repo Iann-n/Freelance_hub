@@ -48,18 +48,18 @@ def register():
         with get_db() as db:
             cursor = db.cursor()
             
-            existing = cursor.execute("SELECT username FROM users WHERE username = ?", (name,)).fetchone()
+            existing = cursor.execute("SELECT username FROM users WHERE username = %s", (name,)).fetchone()
             if existing:
                 return render_template("error.html", error="Name is taken")
             
             hashed_password = generate_password_hash(password, method='pbkdf2:sha512')
             
             cursor.execute(
-                "INSERT INTO users (username, password, is_buyer, is_seller) VALUES (?, ?, ?, ?)", 
+                "INSERT INTO users (username, password, is_buyer, is_seller) VALUES (%s, %s, %s, %s)", 
                 (name, hashed_password, 1, 0)
             )
             
-            user = cursor.execute("SELECT * FROM users WHERE username = ?", (name,)).fetchone()
+            user = cursor.execute("SELECT * FROM users WHERE username = %s", (name,)).fetchone()
             
             session["user_id"] = user["id"]
             session["username"] = name
@@ -84,7 +84,7 @@ def login():
         
         with get_db() as db:
             cursor = db.cursor()
-            user = cursor.execute("SELECT * FROM users WHERE username = ?", (name,)).fetchone()
+            user = cursor.execute("SELECT * FROM users WHERE username = %s", (name,)).fetchone()
 
             if not user or not check_password_hash(user["password"], password):
                 return render_template("error.html", error="Invalid username or password")
