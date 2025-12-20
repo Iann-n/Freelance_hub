@@ -1,5 +1,5 @@
 """Service and payment-related routes"""
-from flask import Blueprint, render_template, request, session, redirect
+from flask import Blueprint, render_template, request, session, redirect, url_for
 import os
 import stripe
 from dotenv import load_dotenv
@@ -50,7 +50,8 @@ def create_checkout_session(service_id):
     if not service:
         return "Service not found", 404
     
-    YOUR_DOMAIN = 'http://127.0.0.1:5000'
+    # Get the domain from environment variable or construct from request
+    YOUR_DOMAIN = os.getenv('DOMAIN', request.url_root.rstrip('/'))
 
     try:
         # Convert Decimal to float for calculation
