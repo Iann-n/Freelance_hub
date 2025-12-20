@@ -53,6 +53,9 @@ def create_checkout_session(service_id):
     YOUR_DOMAIN = 'http://127.0.0.1:5000'
 
     try:
+        # Convert Decimal to float for calculation
+        price_float = float(service['price']) if service['price'] is not None else 0.0
+        
         checkout_session = stripe.checkout.Session.create(
             payment_method_types=['card'],
             line_items=[
@@ -62,7 +65,7 @@ def create_checkout_session(service_id):
                         'product_data': {
                             'name': service['title'],
                         },
-                        'unit_amount': int(service['price'] * 100 * 1.10),
+                        'unit_amount': int(price_float * 100 * 1.10),
                     },
                     'quantity': 1,
                 },
