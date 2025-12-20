@@ -66,7 +66,7 @@ def upload_resume():
             JOIN conversations ON chat_messages.conversation_id = conversations.id
             WHERE conversations.seller_id = %s
             AND chat_messages.sender_id != %s
-            AND chat_messages.is_read = false
+            AND chat_messages.is_read = 0
         """, (session["user_id"], session["user_id"]))
         total_unread = cursor.fetchone()[0]
         

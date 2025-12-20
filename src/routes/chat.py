@@ -31,7 +31,7 @@ def api_conversations():
                 FROM chat_messages 
                 WHERE conversation_id = c.id
                 AND sender_id != %s
-                AND is_read = false
+                AND is_read = 0
             ) AS unread_count
         FROM conversations c
         JOIN users buyer ON c.buyer_id = buyer.id
@@ -90,7 +90,7 @@ def api_conversation_messages(conversation_id):
     # Mark messages as read
     cursor.execute("""
         UPDATE chat_messages
-        SET is_read = true
+        SET is_read = 1
         WHERE conversation_id = %s AND sender_id != %s
     """, (conversation_id, user_id))
     db.commit()
@@ -191,7 +191,7 @@ def inbox():
                 FROM chat_messages 
                 WHERE conversation_id = c.id
                 AND sender_id != %s
-                AND is_read = false
+                AND is_read = 0
             ) AS unread_count
         FROM conversations c
         JOIN users buyer ON c.buyer_id = buyer.id
@@ -337,7 +337,7 @@ def chat_conversation(conversation_id):
     # Mark messages as read for this user
     cursor.execute("""
         UPDATE chat_messages
-        SET is_read = true
+        SET is_read = 1
         WHERE conversation_id = %s
         AND sender_id != %s
     """, (conversation_id, user_id))
