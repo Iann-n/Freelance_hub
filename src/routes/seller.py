@@ -14,26 +14,29 @@ def seller():
     cursor = db.cursor()
 
     # Fetch current user's resume
-    user_row = cursor.execute("SELECT * FROM users WHERE id = %s", (session["user_id"],)).fetchone()
+    cursor.execute("SELECT * FROM users WHERE id = %s", (session["user_id"],))
+    user_row = cursor.fetchone()
 
     # Fetch unread message count for this seller
-    total_unread = cursor.execute("""
+    cursor.execute("""
         SELECT COUNT(*) AS unread_count
         FROM chat_messages
         JOIN conversations ON chat_messages.conversation_id = conversations.id
         WHERE conversations.seller_id = %s
         AND chat_messages.sender_id != %s
         AND chat_messages.is_read = false
-    """, (session["user_id"], session["user_id"])).fetchone()["unread_count"]
+    """, (session["user_id"], session["user_id"]))
+    total_unread = cursor.fetchone()["unread_count"]
 
     # Fetch the seller's services + include resume via JOIN
-    user_tasks = cursor.execute("""
+    cursor.execute("""
         SELECT services.id, services.title, services.description, 
                services.price, services.image_url, users.resume, users.username
         FROM services
         JOIN users ON services.user_id = users.id
         WHERE services.user_id = %s
-    """, (session["user_id"],)).fetchall()
+    """, (session["user_id"],))
+    user_tasks = cursor.fetchall()
 
     user_posts = [
         freelance_post(
@@ -147,10 +150,11 @@ def delete_service():
     cursor.execute("DELETE FROM services WHERE id = %s AND user_id = %s", (service_id, session["user_id"]))
     db.commit()
 
-    user_tasks = cursor.execute("""SELECT services.id, services.title, services.description, services.price, 
+    cursor.execute("""SELECT services.id, services.title, services.description, services.price, 
                                   services.image_url, users.resume, users.username FROM services
                                   JOIN users ON services.user_id = users.id
-                                  WHERE services.user_id = %s""", (session["user_id"],)).fetchall()
+                                  WHERE services.user_id = %s""", (session["user_id"],))
+    user_tasks = cursor.fetchall()
     user_posts = [freelance_post(row["title"], row["description"], row["price"], row["id"], 
                                 row["resume"], row["username"], row["image_url"]) for row in user_tasks]
 
@@ -170,7 +174,7 @@ def seller_inbox():
     if not seller_id:
         return redirect("/login")
 
-    conversations = cursor.execute("""
+    cursor.execute("""
         SELECT 
             c.id AS conversation_id,
             u.username AS buyer_username,
@@ -182,7 +186,7 @@ def seller_inbox():
                 FROM chat_messages 
                 WHERE conversation_id = c.id
                 AND sender_id != %s
-                AND is_read = 0
+                AND is_read = false
             ) AS unread_count
         FROM conversations c
         JOIN users u ON c.buyer_id = u.id
@@ -195,7 +199,8 @@ def seller_inbox():
         )
         WHERE c.seller_id = %s
         ORDER BY last_timestamp DESC
-    """, (seller_id, seller_id)).fetchall()
+    """, (seller_id, seller_id))
+    conversations = cursor.fetchall()
 
     total_unread = sum(c["unread_count"] for c in conversations)
 

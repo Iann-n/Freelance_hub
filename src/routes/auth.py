@@ -48,7 +48,8 @@ def register():
         with get_db() as db:
             cursor = db.cursor()
             
-            existing = cursor.execute("SELECT username FROM users WHERE username = %s", (name,)).fetchone()
+            cursor.execute("SELECT username FROM users WHERE username = %s", (name,))
+            existing = cursor.fetchone()
             if existing:
                 return render_template("error.html", error="Name is taken")
             
@@ -56,10 +57,11 @@ def register():
             
             cursor.execute(
                 "INSERT INTO users (username, password, is_buyer, is_seller) VALUES (%s, %s, %s, %s)", 
-                (name, hashed_password, 1, 0)
+                (name, hashed_password, True, False)
             )
             
-            user = cursor.execute("SELECT * FROM users WHERE username = %s", (name,)).fetchone()
+            cursor.execute("SELECT * FROM users WHERE username = %s", (name,))
+            user = cursor.fetchone()
             
             session["user_id"] = user["id"]
             session["username"] = name
@@ -84,7 +86,8 @@ def login():
         
         with get_db() as db:
             cursor = db.cursor()
-            user = cursor.execute("SELECT * FROM users WHERE username = %s", (name,)).fetchone()
+            cursor.execute("SELECT * FROM users WHERE username = %s", (name,))
+            user = cursor.fetchone()
 
             if not user or not check_password_hash(user["password"], password):
                 return render_template("error.html", error="Invalid username or password")
@@ -93,7 +96,7 @@ def login():
             session["username"] = name
             session["password"] = user["password"]
             session["resume"] = user["resume"] or ""
-            session["profile_type"] = "seller" if user["is_seller"] == 1 else "buyer"
+            session["profile_type"] = "seller" if user["is_seller"] else "buyer"
 
         return redirect("/home")
     

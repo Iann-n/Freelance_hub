@@ -16,7 +16,7 @@ def api_conversations():
     cursor = db.cursor()
 
     # Get conversations where user is either buyer or seller
-    conversations = cursor.execute("""
+    cursor.execute("""
         SELECT 
             c.id AS conversation_id,
             c.buyer_id,
@@ -31,7 +31,7 @@ def api_conversations():
                 FROM chat_messages 
                 WHERE conversation_id = c.id
                 AND sender_id != %s
-                AND is_read = 0
+                AND is_read = false
             ) AS unread_count
         FROM conversations c
         JOIN users buyer ON c.buyer_id = buyer.id
@@ -46,7 +46,8 @@ def api_conversations():
         WHERE c.buyer_id = %s OR c.seller_id = %s
         ORDER BY last_timestamp DESC
         LIMIT 10
-    """, (user_id, user_id, user_id)).fetchall()
+    """, (user_id, user_id, user_id))
+    conversations = cursor.fetchall()
 
     # Format conversations with proper other party name
     formatted_conversations = []
@@ -89,19 +90,20 @@ def api_conversation_messages(conversation_id):
     # Mark messages as read
     cursor.execute("""
         UPDATE chat_messages
-        SET is_read = 1
+        SET is_read = true
         WHERE conversation_id = %s AND sender_id != %s
     """, (conversation_id, user_id))
     db.commit()
 
     # Fetch messages
-    messages = cursor.execute("""
+    cursor.execute("""
         SELECT chat_messages.*, users.username
         FROM chat_messages
         JOIN users ON chat_messages.sender_id = users.id
         WHERE conversation_id = %s
         ORDER BY timestamp ASC
-    """, (conversation_id,)).fetchall()
+    """, (conversation_id,))
+    messages = cursor.fetchall()
 
     formatted_messages = [{
         "id": msg["id"],
@@ -131,10 +133,11 @@ def api_send_message(conversation_id):
     cursor = db.cursor()
 
     # Verify user is part of this conversation
-    conversation = cursor.execute("""
+    cursor.execute("""
         SELECT * FROM conversations 
         WHERE id = %s AND (buyer_id = %s OR seller_id = %s)
-    """, (conversation_id, user_id, user_id)).fetchone()
+    """, (conversation_id, user_id, user_id))
+    conversation = cursor.fetchone()
 
     if not conversation:
         cursor.close()
@@ -144,7 +147,7 @@ def api_send_message(conversation_id):
     # Insert message
     cursor.execute("""
         INSERT INTO chat_messages (conversation_id, sender_id, message)
-        VALUES (?, ?, ?)
+        VALUES (%s, %s, %s)
     """, (conversation_id, user_id, message))
 
     # Determine recipient for notification
@@ -173,7 +176,7 @@ def inbox():
     cursor = db.cursor()
 
     # Get conversations where user is either buyer or seller
-    conversations = cursor.execute("""
+    cursor.execute("""
         SELECT 
             c.id AS conversation_id,
             c.buyer_id,
@@ -188,7 +191,7 @@ def inbox():
                 FROM chat_messages 
                 WHERE conversation_id = c.id
                 AND sender_id != %s
-                AND is_read = 0
+                AND is_read = false
             ) AS unread_count
         FROM conversations c
         JOIN users buyer ON c.buyer_id = buyer.id
@@ -202,7 +205,8 @@ def inbox():
         )
         WHERE c.buyer_id = %s OR c.seller_id = %s
         ORDER BY last_timestamp DESC
-    """, (user_id, user_id, user_id)).fetchall()
+    """, (user_id, user_id, user_id))
+    conversations = cursor.fetchall()
 
     # Format conversations with proper other party name
     formatted_conversations = []
@@ -246,12 +250,13 @@ def chat(service_id):
     cursor = db.cursor()
 
     # Get the service and seller
-    service = cursor.execute("""
+    cursor.execute("""
         SELECT services.*, users.username AS seller_name, users.id AS seller_id
         FROM services
         JOIN users ON services.user_id = users.id
         WHERE services.id = %s
-    """, (service_id,)).fetchone()
+    """, (service_id,))
+    service = cursor.fetchone()
 
     if not service:
         return "Service not found", 404
@@ -260,10 +265,11 @@ def chat(service_id):
     buyer_id = user_id
 
     # Try to find existing conversation
-    conversation = cursor.execute("""
+    cursor.execute("""
         SELECT * FROM conversations
         WHERE service_id = %s AND buyer_id = %s
-    """, (service_id, buyer_id)).fetchone()
+    """, (service_id, buyer_id))
+    conversation = cursor.fetchone()
 
     # If no conversation exists, create one
     if conversation is None:
@@ -273,21 +279,23 @@ def chat(service_id):
         """, (service_id, buyer_id, seller_id))
         db.commit()
 
-        conversation = cursor.execute("""
+        cursor.execute("""
             SELECT * FROM conversations
             WHERE service_id = %s AND buyer_id = %s
-        """, (service_id, buyer_id)).fetchone()
+        """, (service_id, buyer_id))
+        conversation = cursor.fetchone()
 
     conversation_id = conversation["id"]
 
     # Fetch messages
-    messages = cursor.execute("""
+    cursor.execute("""
         SELECT chat_messages.*, users.username
         FROM chat_messages
         JOIN users ON chat_messages.sender_id = users.id
         WHERE conversation_id = %s
         ORDER BY timestamp ASC
-    """, (conversation_id,)).fetchall()
+    """, (conversation_id,))
+    messages = cursor.fetchall()
     cursor.close()
     db.close()
 
@@ -318,9 +326,10 @@ def chat_conversation(conversation_id):
     cursor = db.cursor()
 
     # Check conversation exists
-    conversation = cursor.execute("""
+    cursor.execute("""
         SELECT * FROM conversations WHERE id = %s
-    """, (conversation_id,)).fetchone()
+    """, (conversation_id,))
+    conversation = cursor.fetchone()
 
     if not conversation:
         return "Conversation not found", 404
@@ -328,28 +337,30 @@ def chat_conversation(conversation_id):
     # Mark messages as read for this user
     cursor.execute("""
         UPDATE chat_messages
-        SET is_read = 1
+        SET is_read = true
         WHERE conversation_id = %s
         AND sender_id != %s
     """, (conversation_id, user_id))
     db.commit()
 
     # Load service
-    service = cursor.execute("""
+    cursor.execute("""
         SELECT services.*, users.username AS seller_name
         FROM services
         JOIN users ON services.user_id = users.id
         WHERE services.id = %s
-    """, (conversation["service_id"],)).fetchone()
+    """, (conversation["service_id"],))
+    service = cursor.fetchone()
 
     # Load messages
-    messages = cursor.execute("""
+    cursor.execute("""
         SELECT chat_messages.*, users.username
         FROM chat_messages
         JOIN users ON chat_messages.sender_id = users.id
         WHERE conversation_id = %s
         ORDER BY timestamp ASC
-    """, (conversation_id,)).fetchall()
+    """, (conversation_id,))
+    messages = cursor.fetchall()
 
     service_data = {
         "id": service["id"],
@@ -390,10 +401,11 @@ def send_msg(conversation_id):
     db = get_db_connection()
     cursor = db.cursor()
 
-    conv = cursor.execute("""
+    cursor.execute("""
         SELECT * FROM conversations 
         WHERE id= %s AND (buyer_id= %s OR seller_id= %s)
-    """, (conversation_id, user_id, user_id)).fetchone()
+    """, (conversation_id, user_id, user_id))
+    conv = cursor.fetchone()
 
     if conv is None:
         return "Unauthorized", 403

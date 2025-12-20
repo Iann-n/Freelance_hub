@@ -13,7 +13,8 @@ def recommend(posts):
     """Recommend posts based on user preferences"""
     with get_db() as db:
         cursor = db.cursor()
-        row = cursor.execute("SELECT preferences FROM users WHERE id = %s", (session["user_id"],)).fetchone()
+        cursor.execute("SELECT preferences FROM users WHERE id = %s", (session["user_id"],))
+        row = cursor.fetchone()
         preferences = json.loads(row["preferences"]) if row and row["preferences"] else []
     
     if not preferences:
@@ -31,15 +32,17 @@ def buyer():
     with get_db() as db:
         cursor = db.cursor()
         
-        services = cursor.execute("""
+        cursor.execute("""
             SELECT services.id, services.title, services.description, services.price, 
                    services.image_url, users.resume, users.username
             FROM services
             JOIN users ON services.user_id = users.id
             WHERE services.user_id != %s
-        """, (user_id,)).fetchall()
+        """, (user_id,))
+        services = cursor.fetchall()
         
-        row = cursor.execute("SELECT preferences FROM users WHERE id = %s", (user_id,)).fetchone()
+        cursor.execute("SELECT preferences FROM users WHERE id = %s", (user_id,))
+        row = cursor.fetchone()
         user_preferences = json.loads(row["preferences"]) if row and row["preferences"] else []
     
     posts = [
@@ -94,15 +97,17 @@ def search():
     with get_db() as db:
         cursor = db.cursor()
         
-        services = cursor.execute("""
+        cursor.execute("""
             SELECT services.id, services.title, services.description, services.price, 
                    services.image_url, users.resume, users.username 
             FROM services
             JOIN users ON services.user_id = users.id
             WHERE services.user_id != %s
-        """, (user_id,)).fetchall()
+        """, (user_id,))
+        services = cursor.fetchall()
         
-        row = cursor.execute("SELECT preferences FROM users WHERE id = %s", (user_id,)).fetchone()
+        cursor.execute("SELECT preferences FROM users WHERE id = %s", (user_id,))
+        row = cursor.fetchone()
         user_preferences = json.loads(row["preferences"]) if row and row["preferences"] else []
     
     posts = [

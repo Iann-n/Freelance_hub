@@ -18,7 +18,8 @@ stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
 def service_detail(service_id):
     db = get_db_connection()
     cursor = db.cursor()
-    service = cursor.execute("SELECT * FROM services WHERE id = ?", (service_id,)).fetchone()
+    cursor.execute("SELECT * FROM services WHERE id = %s", (service_id,))
+    service = cursor.fetchone()
     cursor.close()
     db.close()
     
@@ -41,7 +42,8 @@ def service_detail(service_id):
 def create_checkout_session(service_id):
     db = get_db_connection()
     cursor = db.cursor()
-    service = cursor.execute("SELECT * FROM services WHERE id = ?", (service_id,)).fetchone()
+    cursor.execute("SELECT * FROM services WHERE id = %s", (service_id,))
+    service = cursor.fetchone()
     cursor.close()
     db.close()
     
