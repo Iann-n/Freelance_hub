@@ -1,20 +1,18 @@
 """Database utilities"""
-import psycopg2
-import psycopg2.extras
+import psycopg
+from psycopg.rows import dict_row
 import os
 from contextlib import contextmanager
 
 def get_db_connection():
-    """Get PostgreSQL database connection"""
-    conn = psycopg2.connect(
+    conn = psycopg.connect(
         os.environ.get('DATABASE_URL'),
-        cursor_factory=psycopg2.extras.RealDictCursor
+        row_factory=dict_row
     )
     return conn
 
 @contextmanager
 def get_db():
-    """Context manager for automatic connection cleanup"""
     conn = None
     try:
         conn = get_db_connection()
