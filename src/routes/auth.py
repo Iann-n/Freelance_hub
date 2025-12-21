@@ -57,7 +57,7 @@ def register():
             
             cursor.execute(
                 "INSERT INTO users (username, password, is_buyer, is_seller) VALUES (%s, %s, %s, %s)", 
-                (name, hashed_password, True, False)
+                (name, hashed_password, 1, 0)
             )
             
             cursor.execute("SELECT * FROM users WHERE username = %s", (name,))
