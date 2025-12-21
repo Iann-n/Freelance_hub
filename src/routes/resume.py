@@ -61,14 +61,14 @@ def upload_resume():
         )
 
         cursor.execute("""
-            SELECT COUNT(*)
+            SELECT COUNT(*) as count
             FROM chat_messages
             JOIN conversations ON chat_messages.conversation_id = conversations.id
             WHERE conversations.seller_id = %s
             AND chat_messages.sender_id != %s
             AND chat_messages.is_read = 0
         """, (session["user_id"], session["user_id"]))
-        total_unread = cursor.fetchone()[0]
+        total_unread = cursor.fetchone()["count"]
         
         cursor.close()
         db.close()
